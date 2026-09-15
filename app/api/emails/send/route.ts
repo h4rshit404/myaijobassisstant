@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         userId: user.id,
         to: outboundEmail.jobListing.contactEmail,
         subject: draft.subject,
-        body: draft.body,
+        html: draft.body,
       });
 
       await prisma.outboundEmail.update({

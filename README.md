@@ -74,6 +74,24 @@ search's results page to see what each platform actually returned.
 
 For reliable coverage, configure the Adzuna and/or JSearch keys (both have free tiers).
 
+### Finding the email, not just the listing
+
+Search-result summaries almost never carry a contact email — the pipeline runs an
+**enriching** step (`lib/scrapers/enrich.ts`) between scraping and classification that follows
+each listing's own link (`sourceUrl` — which for Adzuna/JSearch/etc. is usually the original
+posting on the company's own careers page or ATS) and pulls the full page text before the AI
+classifier looks for an email. This is what makes company/HR emails findable even when the
+platform's search-result card didn't show one. Listings that still come up with no email after
+that (most of them, realistically — plenty of companies use apply-tracking systems with no
+email at all) are left out of the results and the table entirely; only listings with a
+classified contact email are shown.
+
+## Applied jobs
+
+Once an outreach email is actually sent for a listing, it's recorded as "applied" and:
+- shows up in the **Applied** tab (`/dashboard/applied`) instead of the search results table, and
+- is excluded from any future search (matched by title+company+location) so it can't resurface.
+
 ## Security notes
 
 - OpenAI keys, optional job-source API keys, and the Gmail refresh token are encrypted at

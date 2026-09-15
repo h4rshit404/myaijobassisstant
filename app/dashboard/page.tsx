@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireOnboardedUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { PLATFORM_OPTIONS } from "@/lib/scrapers/registry";
+import { visibleListingsWhere } from "@/lib/scrapers/visible-listings";
 import { SearchForm } from "./search-form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   PENDING: "outline",
   SCRAPING: "secondary",
+  ENRICHING: "secondary",
   CLASSIFYING: "secondary",
   DONE: "default",
   FAILED: "destructive",
@@ -27,7 +29,7 @@ export default async function DashboardPage() {
       locations: true,
       status: true,
       createdAt: true,
-      _count: { select: { listings: true } },
+      _count: { select: { listings: { where: visibleListingsWhere() } } },
     },
   });
 

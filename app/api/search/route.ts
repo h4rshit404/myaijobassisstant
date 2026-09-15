@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { PLATFORM_OPTIONS } from "@/lib/scrapers/registry";
 import { runJobSearch } from "@/lib/scrapers/run-search";
+import { visibleListingsWhere } from "@/lib/scrapers/visible-listings";
 
 const VALID_PLATFORM_IDS = new Set(PLATFORM_OPTIONS.map((p) => p.id));
 
@@ -50,7 +51,7 @@ export async function GET() {
       platforms: true,
       status: true,
       createdAt: true,
-      _count: { select: { listings: true } },
+      _count: { select: { listings: { where: visibleListingsWhere() } } },
     },
   });
 

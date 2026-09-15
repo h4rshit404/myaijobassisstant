@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, Code2, Eye, Loader2, XCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +51,16 @@ export function EmailPreviewModal({
   const [skippedCount, setSkippedCount] = useState(0);
   const [sending, setSending] = useState(false);
   const [results, setResults] = useState<Record<string, SendResult>>({});
+  const [previewing, setPreviewing] = useState<Set<string>>(new Set());
+
+  function togglePreview(id: string) {
+    setPreviewing((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -174,13 +184,42 @@ export function EmailPreviewModal({
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Body</Label>
-                    <Textarea
-                      rows={7}
-                      value={draft.body}
-                      onChange={(e) => updateDraft(draft.id, "body", e.target.value)}
-                      disabled={sending || !!result}
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">
+                        Body {previewing.has(draft.id) ? "(preview)" : "(HTML source)"}
+                      </Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 gap-1 text-xs"
+                        onClick={() => togglePreview(draft.id)}
+                      >
+                        {previewing.has(draft.id) ? (
+                          <>
+                            <Code2 className="h-3 w-3" /> Edit HTML
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-3 w-3" /> Preview
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    {previewing.has(draft.id) ? (
+                      <div
+                        className="min-h-[168px] rounded-md border bg-background px-3 py-2 text-sm [&_a]:underline [&_a]:text-primary [&_p]:mb-2"
+                        dangerouslySetInnerHTML={{ __html: draft.body }}
+                      />
+                    ) : (
+                      <Textarea
+                        rows={7}
+                        value={draft.body}
+                        onChange={(e) => updateDraft(draft.id, "body", e.target.value)}
+                        disabled={sending || !!result}
+                        className="font-mono text-xs"
+                      />
+                    )}
                   </div>
                 </div>
               );

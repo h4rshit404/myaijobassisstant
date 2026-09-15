@@ -8,7 +8,9 @@ export default async function OnboardingPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="text-2xl font-semibold tracking-tight">Set up your profile</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">
+        {profile ? "Update your profile" : "Set up your profile"}
+      </h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Upload your resume so we can pre-fill your profile, and share a Drive link — it&apos;s
         the link we&apos;ll include in outreach emails sent on your behalf.
@@ -21,6 +23,7 @@ export default async function OnboardingPage() {
                   resumeFileUrl: profile.resumeFileUrl,
                   resumeFileName: profile.resumeFileName,
                   resumeDriveLink: profile.resumeDriveLink,
+                  phone: profile.phone ?? "",
                   headline: profile.headline ?? "",
                   summary: profile.summary ?? "",
                   experienceYears: profile.experienceYears ?? 0,

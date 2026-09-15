@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { ALL_ADAPTERS } from "@/lib/scrapers/registry";
 import { getScraperKeysForUser } from "@/lib/scrapers/keys";
 import { dedupeHash } from "@/lib/scrapers/dedupe";
+import { getAppliedDedupeHashes } from "@/lib/scrapers/applied";
 import type { RawJob, SourceRunResult } from "@/lib/scrapers/types";
 
 const ADAPTER_TIMEOUT_MS = 15000;
@@ -22,7 +23,11 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   });
 }
 
-async function persistJobs(jobSearchId: string, jobs: RawJob[]): Promise<number> {
+async function persistJobs(
+  jobSearchId: string,
+  jobs: RawJob[],
+  appliedHashes: Set<string>
+): Promise<number> {
   if (!jobs.length) return 0;
 
   const rows = jobs
@@ -36,7 +41,12 @@ async function persistJobs(jobSearchId: string, jobs: RawJob[]): Promise<number>
       sourceUrl: j.sourceUrl || null,
       descriptionRaw: j.descriptionRaw || null,
       dedupeHash: dedupeHash(j.title, j.company, j.location),
-    }));
+    }))
+    // Already applied to this exact job (title+company+location) in a previous search —
+    // don't let it resurface here; it belongs in the Applied Jobs section instead.
+    .filter((row) => !appliedHashes.has(row.dedupeHash));
+
+  if (!rows.length) return 0;
 
   const result = await prisma.jobListing.createMany({ data: rows, skipDuplicates: true });
   return result.count;
@@ -53,7 +63,10 @@ export async function runScrapePipeline(params: {
   platforms: string[];
 }): Promise<SourceRunResult[]> {
   const { jobSearchId, userId, keywords, locations, platforms } = params;
-  const keys = await getScraperKeysForUser(userId);
+  const [keys, appliedHashes] = await Promise.all([
+    getScraperKeysForUser(userId),
+    getAppliedDedupeHashes(userId),
+  ]);
   const adapters = ALL_ADAPTERS.filter((a) => platforms.includes(a.id));
 
   const runs = await Promise.allSettled(
@@ -68,7 +81,7 @@ export async function runScrapePipeline(params: {
           ADAPTER_TIMEOUT_MS,
           [] as RawJob[]
         );
-        const persisted = await persistJobs(jobSearchId, jobs);
+        const persisted = await persistJobs(jobSearchId, jobs, appliedHashes);
         return { platform: adapter.label, ok: true, count: persisted };
       } catch (err) {
         return {

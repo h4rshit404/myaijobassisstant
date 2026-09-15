@@ -28,20 +28,20 @@ async function getOAuthClientForUser(userId: string) {
   return { oauth2Client, email: gmailAccount.email };
 }
 
-/** Sends a plain-text email from the user's own Gmail account via their OAuth grant.
- * Returns the Gmail message id. Throws GmailNotConnectedError if the grant is missing;
- * callers (the batch send endpoint) are expected to catch per-item and keep going. */
+/** Sends an HTML email from the user's own Gmail account via their OAuth grant. Returns the
+ * Gmail message id. Throws GmailNotConnectedError if the grant is missing; callers (the
+ * batch send endpoint) are expected to catch per-item and keep going. */
 export async function sendGmailMessage(params: {
   userId: string;
   to: string;
   subject: string;
-  body: string;
+  html: string;
 }): Promise<string> {
-  const { userId, to, subject, body } = params;
+  const { userId, to, subject, html } = params;
   const { oauth2Client, email } = await getOAuthClientForUser(userId);
 
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-  const raw = buildRawMessage({ from: email, to, subject, body });
+  const raw = buildRawMessage({ from: email, to, subject, html });
 
   const res = await gmail.users.messages.send({
     userId: "me",

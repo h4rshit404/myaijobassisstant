@@ -8,8 +8,17 @@ import { Button } from "@/components/ui/button";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Search" },
+  { href: "/dashboard/applied", label: "Applied" },
+  { href: "/onboarding", label: "Profile" },
   { href: "/settings", label: "Settings" },
 ];
+
+function isActiveLink(href: string, pathname: string | null): boolean {
+  if (href === "/dashboard") {
+    return pathname === "/dashboard" || pathname?.startsWith("/dashboard/searches") === true;
+  }
+  return pathname?.startsWith(href) === true;
+}
 
 export function Navbar() {
   const { data: session, status } = useSession();
@@ -27,7 +36,7 @@ export function Navbar() {
             {NAV_LINKS.map((link) => (
               <Link key={link.href} href={link.href}>
                 <Button
-                  variant={pathname?.startsWith(link.href) ? "secondary" : "ghost"}
+                  variant={isActiveLink(link.href, pathname) ? "secondary" : "ghost"}
                   size="sm"
                 >
                   {link.label}

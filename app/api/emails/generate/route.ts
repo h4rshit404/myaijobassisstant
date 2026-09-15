@@ -53,6 +53,7 @@ export async function POST(req: Request) {
       company: listing.company,
       location: listing.location,
       candidateName: user.name ?? "Candidate",
+      phone: profile.phone,
       headline: profile.headline ?? undefined,
       skills: profile.skills,
       resumeLink: profile.resumeDriveLink,

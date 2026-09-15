@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { runScrapePipeline } from "@/lib/scrapers/pipeline";
+import { enrichListingsWithFullText } from "@/lib/scrapers/enrich";
 import { classifyJobListings } from "@/lib/ai/classify-listings";
 
 /** Orchestrates a full search run: scrape (all platforms in parallel, isolated failures) ->
@@ -25,8 +26,14 @@ export async function runJobSearch(params: {
 
     await prisma.jobSearch.update({
       where: { id: jobSearchId },
-      data: { status: "CLASSIFYING", sourceStatus: JSON.parse(JSON.stringify(sourceStatus)) },
+      data: { status: "ENRICHING", sourceStatus: JSON.parse(JSON.stringify(sourceStatus)) },
     });
+
+    // Search-result summaries rarely carry a contact email — fetch each listing's original
+    // posting (often the company's own careers page) for the full text before classifying.
+    await enrichListingsWithFullText(jobSearchId);
+
+    await prisma.jobSearch.update({ where: { id: jobSearchId }, data: { status: "CLASSIFYING" } });
 
     await classifyJobListings(jobSearchId, userId);
 

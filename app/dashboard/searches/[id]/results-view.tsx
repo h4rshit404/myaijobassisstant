@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { EmailPreviewModal } from "@/components/email-preview-modal";
 
 type EmailType = "HR" | "REFERRAL" | "UNKNOWN";
-type SearchStatus = "PENDING" | "SCRAPING" | "CLASSIFYING" | "DONE" | "FAILED";
+type SearchStatus = "PENDING" | "SCRAPING" | "ENRICHING" | "CLASSIFYING" | "DONE" | "FAILED";
 
 interface Listing {
   id: string;
@@ -43,7 +43,7 @@ interface JobSearchData {
   listings: Listing[];
 }
 
-const IN_PROGRESS: SearchStatus[] = ["PENDING", "SCRAPING", "CLASSIFYING"];
+const IN_PROGRESS: SearchStatus[] = ["PENDING", "SCRAPING", "ENRICHING", "CLASSIFYING"];
 
 const EMAIL_TYPE_LABEL: Record<EmailType, string> = {
   HR: "HR / Application",
@@ -150,8 +150,8 @@ export function ResultsView({ initial }: { initial: JobSearchData }) {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {jobSearch.listings.length} listing{jobSearch.listings.length === 1 ? "" : "s"} &middot;{" "}
-          {applicableListings.length} with a classified contact email
+          {jobSearch.listings.length} listing{jobSearch.listings.length === 1 ? "" : "s"} with a
+          classified contact email &middot; jobs without one, or already applied to, are left out
         </p>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => openPreview(Array.from(selected))}>
@@ -193,7 +193,7 @@ export function ResultsView({ initial }: { initial: JobSearchData }) {
                       <Loader2 className="h-4 w-4 animate-spin" /> Searching platforms...
                     </span>
                   ) : (
-                    "No listings found for this search."
+                    "No listings with a contact email for this search (postings without one, or already applied to, are left out)."
                   )}
                 </TableCell>
               </TableRow>

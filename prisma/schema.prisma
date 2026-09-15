@@ -42,6 +42,8 @@ model Profile {
   resumeFileName String?
   resumeDriveLink String?
 
+  phone String?
+
   headline        String?
   summary         String?
   experienceYears Float?
@@ -108,6 +110,7 @@ model GmailAccount {
 enum SearchStatus {
   PENDING
   SCRAPING
+  ENRICHING
   CLASSIFYING
   DONE
   FAILED

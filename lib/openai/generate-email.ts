@@ -3,7 +3,7 @@ import type { UserOpenAI } from "@/lib/openai/client";
 
 export const GeneratedEmailSchema = z.object({
   subject: z.string().min(1).max(200),
-  body: z.string().min(1).max(4000),
+  body: z.string().min(1).max(6000),
 });
 export type GeneratedEmail = z.infer<typeof GeneratedEmailSchema>;
 
@@ -13,6 +13,7 @@ interface GenerateEmailParams {
   company?: string | null;
   location?: string | null;
   candidateName: string;
+  phone?: string | null;
   headline?: string;
   skills: string[];
   resumeLink: string;
@@ -20,53 +21,60 @@ interface GenerateEmailParams {
   notes?: string;
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function systemPrompt(type: "APPLICATION" | "REFERRAL"): string {
+  const shared = `The body must be HTML (a few short <p> paragraphs), not plain text. Embed the
+resume link as clickable anchor text inside a sentence — e.g. <a href="RESUME_LINK">my resume</a>
+or <a href="RESUME_LINK">here</a> — never print the raw URL on its own. Sign off with the
+candidate's name and, on the line under it, their phone number if one was given. Respond as
+JSON: { "subject": string, "body": string (HTML) }.`;
+
   if (type === "APPLICATION") {
     return `You write a short, high-interest job application email to an HR/careers inbox.
 Reference the specific job title, location, and a couple of the candidate's key skills.
-Include the resume link as a clear line (e.g. "Resume: <link>"). Sign off with the candidate's name.
-Keep it under 150 words. Respond as JSON: { "subject": string, "body": string }.`;
+Keep it under 150 words. ${shared}`;
   }
   return `You write a warm, concise referral-request email to a working professional at the
 hiring company, asking for an internal referral or brief advice for a specific role. Reference
-the job title and why the candidate is a fit (a couple of key skills). Include the resume link
-as a clear line (e.g. "Resume: <link>"). Sign off with the candidate's name. Keep it under 130
-words, and make it feel personal, not templated. Respond as JSON: { "subject": string, "body": string }.`;
+the job title and why the candidate is a fit (a couple of key skills). Keep it under 130 words,
+and make it feel personal, not templated. ${shared}`;
 }
 
 function fallbackEmail(params: GenerateEmailParams): GeneratedEmail {
-  const { type, jobTitle, company, candidateName, skills, resumeLink } = params;
-  const companyPart = company ? ` at ${company}` : "";
-  const skillsPart = skills.slice(0, 3).join(", ");
+  const { type, jobTitle, company, candidateName, phone, skills, resumeLink } = params;
+  const companyPart = company ? ` at ${escapeHtml(company)}` : "";
+  const skillsPart = escapeHtml(skills.slice(0, 3).join(", "));
+  const title = escapeHtml(jobTitle);
+  const name = escapeHtml(candidateName);
+  const signature = `<p>${type === "APPLICATION" ? "Best regards" : "Best"},<br>${name}${
+    phone ? `<br>${escapeHtml(phone)}` : ""
+  }</p>`;
 
   if (type === "APPLICATION") {
     return {
-      subject: `Application for ${jobTitle}${companyPart}`,
-      body: `Hi,
-
-I'm writing to apply for the ${jobTitle} role${companyPart}. My background includes ${skillsPart}, and I believe I'd be a strong fit for this position.
-
-Resume: ${resumeLink}
-
-Thank you for your time and consideration.
-
-Best regards,
-${candidateName}`,
+      subject: `Application for ${jobTitle}${company ? ` at ${company}` : ""}`,
+      body: `<p>Hi,</p>
+<p>I'm writing to apply for the ${title} role${companyPart}. My background includes ${skillsPart}, and I believe I'd be a strong fit for this position.</p>
+<p>You can view <a href="${resumeLink}">my resume here</a>.</p>
+<p>Thank you for your time and consideration.</p>
+${signature}`,
     };
   }
 
   return {
-    subject: `Quick question about the ${jobTitle} role${companyPart}`,
-    body: `Hi,
-
-I came across the ${jobTitle} opening${companyPart} and wanted to reach out directly. My background includes ${skillsPart}, and I'd really appreciate a referral or any advice you could share about the role.
-
-Resume: ${resumeLink}
-
-Thanks so much for your time!
-
-Best,
-${candidateName}`,
+    subject: `Quick question about the ${jobTitle} role${company ? ` at ${company}` : ""}`,
+    body: `<p>Hi,</p>
+<p>I came across the ${title} opening${companyPart} and wanted to reach out directly. My background includes ${skillsPart}, and I'd really appreciate a referral or any advice you could share about the role.</p>
+<p>You can view <a href="${resumeLink}">my resume here</a>.</p>
+<p>Thanks so much for your time!</p>
+${signature}`,
   };
 }
 
@@ -84,6 +92,7 @@ export async function generateOutreachEmail(
       company: params.company,
       location: params.location,
       candidateName: params.candidateName,
+      phone: params.phone,
       headline: params.headline,
       skills: params.skills,
       resumeLink: params.resumeLink,

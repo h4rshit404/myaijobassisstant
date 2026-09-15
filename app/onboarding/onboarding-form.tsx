@@ -17,6 +17,7 @@ interface InitialProfile {
   resumeFileUrl: string | null;
   resumeFileName: string | null;
   resumeDriveLink: string | null;
+  phone: string;
   headline: string;
   summary: string;
   experienceYears: number;
@@ -31,6 +32,7 @@ export function OnboardingForm({ initialProfile }: { initialProfile: InitialProf
   const [resumeFileUrl, setResumeFileUrl] = useState(initialProfile?.resumeFileUrl ?? null);
   const [resumeFileName, setResumeFileName] = useState(initialProfile?.resumeFileName ?? null);
   const [resumeDriveLink, setResumeDriveLink] = useState(initialProfile?.resumeDriveLink ?? "");
+  const [phone, setPhone] = useState(initialProfile?.phone ?? "");
   const [headline, setHeadline] = useState(initialProfile?.headline ?? "");
   const [summary, setSummary] = useState(initialProfile?.summary ?? "");
   const [experienceYears, setExperienceYears] = useState(initialProfile?.experienceYears ?? 0);
@@ -103,6 +105,7 @@ export function OnboardingForm({ initialProfile }: { initialProfile: InitialProf
           resumeFileUrl,
           resumeFileName,
           resumeDriveLink,
+          phone,
           headline,
           summary,
           experienceYears,
@@ -199,6 +202,20 @@ export function OnboardingForm({ initialProfile }: { initialProfile: InitialProf
               value={headline}
               onChange={(e) => setHeadline(e.target.value)}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone number</Label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="e.g. +91 98765 43210"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Included in the signature of outreach emails sent on your behalf.
+            </p>
           </div>
 
           <div className="space-y-2">
