@@ -1,0 +1,205 @@
+// Prisma schema for myjobassistant
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Auth ----------
+// We use NextAuth (Auth.js) with JWT sessions (no DB adapter), so no
+// Account/Session tables. The only OAuth secret we persist is the Gmail
+// refresh token, and it goes into GmailAccount below, encrypted at rest.
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile        Profile?
+  apiKeySet      ApiKeySet?
+  gmailAccount   GmailAccount?
+  jobSearches    JobSearch[]
+  outboundEmails OutboundEmail[]
+}
+
+// ---------- Profile ----------
+
+model Profile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  resumeFileUrl  String?
+  resumeFileName String?
+  resumeDriveLink String?
+
+  headline        String?
+  summary         String?
+  experienceYears Float?
+  skills          String[] @default([])
+  targetLocations String[] @default([])
+
+  outreachPreferences Json?
+
+  createdAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt
+}
+
+// ---------- Secrets ----------
+
+model ApiKeySet {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // OpenAI
+  openaiKeyEncrypted String?
+  openaiKeyIv        String?
+  openaiKeyAuthTag   String?
+  openaiModel        String  @default("gpt-4o-mini")
+  openaiIsValid      Boolean @default(false)
+  openaiLastValidated DateTime?
+
+  // Optional free/self-serve job source API keys (all encrypted, all optional)
+  adzunaAppIdEncrypted  String?
+  adzunaAppIdIv         String?
+  adzunaAppIdAuthTag    String?
+  adzunaAppKeyEncrypted String?
+  adzunaAppKeyIv        String?
+  adzunaAppKeyAuthTag   String?
+
+  rapidApiKeyEncrypted String?
+  rapidApiKeyIv        String?
+  rapidApiKeyAuthTag   String?
+
+  serpApiKeyEncrypted String?
+  serpApiKeyIv         String?
+  serpApiKeyAuthTag    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GmailAccount {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  email                String
+  refreshTokenEncrypted String
+  refreshTokenIv        String
+  refreshTokenAuthTag    String
+  scopes                String[] @default([])
+  connectedAt           DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+// ---------- Job search & listings ----------
+
+enum SearchStatus {
+  PENDING
+  SCRAPING
+  CLASSIFYING
+  DONE
+  FAILED
+}
+
+model JobSearch {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  keywords  String[]
+  locations String[]
+  platforms String[]
+
+  status       SearchStatus @default(PENDING)
+  sourceStatus Json? // per-platform ok/error summary from the last pipeline run
+  errorMessage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listings JobListing[]
+}
+
+enum EmailType {
+  HR
+  REFERRAL
+  UNKNOWN
+}
+
+model JobListing {
+  id          String    @id @default(cuid())
+  jobSearchId String
+  jobSearch   JobSearch @relation(fields: [jobSearchId], references: [id], onDelete: Cascade)
+
+  title           String
+  company         String?
+  location        String?
+  sourcePlatform  String
+  sourceUrl       String?
+  descriptionRaw  String?  @db.Text
+
+  contactEmail  String?
+  emailType     EmailType @default(UNKNOWN)
+  aiConfidence  Float?
+  aiError       String?
+
+  dedupeHash String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  outboundEmails OutboundEmail[]
+
+  @@unique([jobSearchId, dedupeHash])
+  @@index([jobSearchId])
+}
+
+// ---------- Outbound emails ----------
+
+enum OutboundEmailType {
+  APPLICATION
+  REFERRAL
+}
+
+enum OutboundEmailStatus {
+  DRAFT
+  SENDING
+  SENT
+  FAILED
+}
+
+model OutboundEmail {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  jobListingId String
+  jobListing   JobListing @relation(fields: [jobListingId], references: [id], onDelete: Cascade)
+
+  type    OutboundEmailType
+  subject String
+  body    String @db.Text
+
+  status         OutboundEmailStatus @default(DRAFT)
+  gmailMessageId String?
+  error          String?
+  sentAt         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([jobListingId])
+}
