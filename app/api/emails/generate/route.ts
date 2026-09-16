@@ -52,6 +52,7 @@ export async function POST(req: Request) {
       jobTitle: listing.title,
       company: listing.company,
       location: listing.location,
+      jobUrl: listing.sourceUrl,
       candidateName: user.name ?? "Candidate",
       phone: profile.phone,
       headline: profile.headline ?? undefined,

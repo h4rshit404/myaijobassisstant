@@ -12,6 +12,7 @@ interface GenerateEmailParams {
   jobTitle: string;
   company?: string | null;
   location?: string | null;
+  jobUrl?: string | null;
   candidateName: string;
   phone?: string | null;
   headline?: string;
@@ -32,9 +33,11 @@ function escapeHtml(value: string): string {
 function systemPrompt(type: "APPLICATION" | "REFERRAL"): string {
   const shared = `The body must be HTML (a few short <p> paragraphs), not plain text. Embed the
 resume link as clickable anchor text inside a sentence — e.g. <a href="RESUME_LINK">my resume</a>
-or <a href="RESUME_LINK">here</a> — never print the raw URL on its own. Sign off with the
-candidate's name and, on the line under it, their phone number if one was given. Respond as
-JSON: { "subject": string, "body": string (HTML) }.`;
+or <a href="RESUME_LINK">here</a> — never print a raw URL on its own. If a jobUrl is given,
+also reference the specific posting with its own clickable anchor text (e.g. "the posting" or
+"this role") linking to it, somewhere natural in the email — don't invent one if jobUrl is
+null. Sign off with the candidate's name and, on the line under it, their phone number if one
+was given. Respond as JSON: { "subject": string, "body": string (HTML) }.`;
 
   if (type === "APPLICATION") {
     return `You write a short, high-interest job application email to an HR/careers inbox.
@@ -48,10 +51,11 @@ and make it feel personal, not templated. ${shared}`;
 }
 
 function fallbackEmail(params: GenerateEmailParams): GeneratedEmail {
-  const { type, jobTitle, company, candidateName, phone, skills, resumeLink } = params;
+  const { type, jobTitle, company, jobUrl, candidateName, phone, skills, resumeLink } = params;
   const companyPart = company ? ` at ${escapeHtml(company)}` : "";
   const skillsPart = escapeHtml(skills.slice(0, 3).join(", "));
   const title = escapeHtml(jobTitle);
+  const titlePart = jobUrl ? `<a href="${jobUrl}">${title} role</a>` : `${title} role`;
   const name = escapeHtml(candidateName);
   const signature = `<p>${type === "APPLICATION" ? "Best regards" : "Best"},<br>${name}${
     phone ? `<br>${escapeHtml(phone)}` : ""
@@ -61,17 +65,18 @@ function fallbackEmail(params: GenerateEmailParams): GeneratedEmail {
     return {
       subject: `Application for ${jobTitle}${company ? ` at ${company}` : ""}`,
       body: `<p>Hi,</p>
-<p>I'm writing to apply for the ${title} role${companyPart}. My background includes ${skillsPart}, and I believe I'd be a strong fit for this position.</p>
+<p>I'm writing to apply for the ${titlePart}${companyPart}. My background includes ${skillsPart}, and I believe I'd be a strong fit for this position.</p>
 <p>You can view <a href="${resumeLink}">my resume here</a>.</p>
 <p>Thank you for your time and consideration.</p>
 ${signature}`,
     };
   }
 
+  const openingTitlePart = jobUrl ? `<a href="${jobUrl}">${title} opening</a>` : `${title} opening`;
   return {
     subject: `Quick question about the ${jobTitle} role${company ? ` at ${company}` : ""}`,
     body: `<p>Hi,</p>
-<p>I came across the ${title} opening${companyPart} and wanted to reach out directly. My background includes ${skillsPart}, and I'd really appreciate a referral or any advice you could share about the role.</p>
+<p>I came across the ${openingTitlePart}${companyPart} and wanted to reach out directly. My background includes ${skillsPart}, and I'd really appreciate a referral or any advice you could share about the role.</p>
 <p>You can view <a href="${resumeLink}">my resume here</a>.</p>
 <p>Thanks so much for your time!</p>
 ${signature}`,
@@ -91,6 +96,7 @@ export async function generateOutreachEmail(
       jobTitle: params.jobTitle,
       company: params.company,
       location: params.location,
+      jobUrl: params.jobUrl ?? null,
       candidateName: params.candidateName,
       phone: params.phone,
       headline: params.headline,
