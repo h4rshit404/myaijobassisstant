@@ -9,6 +9,10 @@ const BodySchema = z.object({
   jobListingIds: z.array(z.string()).min(1).max(50),
 });
 
+// Keeps the prompt's token cost bounded — enough for the AI to pull out concrete details
+// (a named tool, a responsibility, a requirement) without paying for the whole posting.
+const MAX_DESCRIPTION_CHARS = 3000;
+
 export async function POST(req: Request) {
   const user = await requireUser();
   const parsed = BodySchema.safeParse(await req.json());
@@ -53,6 +57,7 @@ export async function POST(req: Request) {
       company: listing.company,
       location: listing.location,
       jobUrl: listing.sourceUrl,
+      jobDescription: listing.descriptionRaw?.slice(0, MAX_DESCRIPTION_CHARS) ?? null,
       contactName: listing.contactName,
       candidateName: user.name ?? "Candidate",
       phone: profile.phone,

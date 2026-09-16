@@ -13,6 +13,7 @@ interface GenerateEmailParams {
   company?: string | null;
   location?: string | null;
   jobUrl?: string | null;
+  jobDescription?: string | null;
   contactName?: string | null;
   candidateName: string;
   phone?: string | null;
@@ -36,24 +37,50 @@ function escapeHtml(value: string): string {
 }
 
 function systemPrompt(type: "APPLICATION" | "REFERRAL"): string {
-  const shared = `The body must be HTML (a few short <p> paragraphs), not plain text.
+  const roleContext =
+    type === "APPLICATION"
+      ? "a job application email to the HR/careers inbox for a specific open role"
+      : "a referral-request email to a working professional at the hiring company, asking for an internal referral or brief advice — a softer ask than a direct application";
 
-Structure it like this:
-1. Greeting — "Hi <first name>," if a contactName was given, otherwise just "Hi,".
-2. Opening line: mention you saw the opening for the specific job title (embedded as
-   clickable anchor text linking to jobUrl if one was given — don't invent a link if it's
-   null) at the company, that you wanted to reach out directly, and weave in the candidate's
-   years of experience anchored to their PRIMARY skill — the first entry in the skills list —
-   e.g. "with X+ years of experience in Java, I build scalable, reliable systems" if their top
-   skill is Java, or "...in Python..." if it's Python. Always name the actual top skill given;
-   never generalize it away into something vague. If skills is empty, fall back to their
-   headline for this phrase instead. Only state an experience figure if experienceYears was
-   actually given.
-3. A short "what I'd bring to the table" section: one line introducing it, then a
-   "Core stack:" line listing the candidate's actual skills in the order given, starting with
-   that same primary skill (don't invent skills, don't reorder away from it), and one line
-   naming a real strength grounded in their headline/summary (e.g. performance, reliability,
-   scalability) — don't fabricate specifics not implied by the given profile.
+  return `You write ${roleContext}. Sound like a genuinely interested, specific human writing
+about THIS role — not a template that could be sent to any company for any job. The single
+biggest failure mode to avoid is genericness: an email that never touches anything actually
+specific to this posting or this candidate reads as mass-sent and gets ignored.
+
+How to use what you're given:
+- jobDescription, if given: read it and pull out 1-2 concrete, specific details — a named
+  technology/tool, a stated responsibility, a product/team area, a requirement — and
+  reference them naturally in the opening, tied directly to the candidate's matching
+  skill(s)/experience. This is what makes the email read as genuinely interested. If
+  jobDescription is empty or null, open around the job title, company, and the candidate's
+  primary skill instead — never invent role details that weren't given to you.
+- skills: the FIRST entry is the candidate's primary skill — anchor the opening's
+  specialization phrase on it by name (e.g. "...experience in Java..." vs "...in Python...").
+  Never generalize a named technology away into something vague like "backend systems".
+- headline/summary: background/context for the candidate, especially useful when
+  jobDescription is missing.
+- experienceYears: only state a figure if one was actually given.
+- location: mention naturally only if it adds real relevance (e.g. same city, or explicitly
+  remote) — don't force it in.
+- notes (the candidate's own standing instruction for outreach emails, if given): weave it in
+  faithfully; it overrides generic phrasing where the two would conflict.
+- tone: "formal" → professional and measured, no exclamation points. "friendly" → warm and
+  conversational. "concise" → shorter and plainer, under 100 words, minimal pleasantries.
+- Never fabricate a skill, employer detail, or job requirement that wasn't given to you.
+
+Structure:
+1. Greeting — "Hi <first name>," if contactName was given, otherwise just "Hi,".
+2. Opening (2-3 sentences): the specific job title (embedded as clickable anchor text linking
+   to jobUrl if one was given), the company, and — the important part — something concrete
+   from jobDescription if you have it, connected to the candidate's matching
+   skill/experience. Without jobDescription, open around title + company + primary skill +
+   experienceYears instead.
+3. A short "what I'd bring to the table" section: one intro line, then a "Core stack:" line
+   listing the candidate's actual skills in the order given (primary skill first — don't
+   invent skills, don't reorder away from it), then one line naming a real, specific strength
+   connected to something in jobDescription if you have it (e.g. "particularly relevant given
+   the role's focus on <thing actually mentioned>"), otherwise a general strength grounded in
+   headline/summary.
 4. A line saying the resume is available, with the resume link as clickable anchor text (e.g.
    <a href="RESUME_LINK">my resume</a>) — never print a raw URL on its own.
 5. A short closing line inviting a quick chat to discuss how the candidate can help.
@@ -61,19 +88,25 @@ Structure it like this:
    given — phone number as plain text, "LinkedIn" as clickable anchor text linking to
    linkedinUrl, "GitHub" as clickable anchor text linking to githubUrl.
 
-Keep the whole email under 180 words. Respond as JSON: { "subject": string, "body": string (HTML) }.`;
-
-  if (type === "APPLICATION") {
-    return `You write a warm but high-interest job application email to an HR/careers inbox, applying for a specific role. ${shared}`;
-  }
-  return `You write a warm, concise referral-request email to a working professional at the
-hiring company, asking for an internal referral or brief advice for a specific role — softer
-ask than a direct application, make it feel personal, not templated. ${shared}`;
+The body must be HTML (a few short <p> paragraphs), not plain text. Keep the whole email under
+180 words (under 100 if tone is "concise"). Respond as JSON: { "subject": string, "body": string (HTML) }.`;
 }
 
 function formatExperience(years: number | null | undefined): string | null {
   if (!years || years < 1) return null;
   return `${Math.floor(years)}+ years`;
+}
+
+/** Best-effort, non-AI signal for the fallback template: does the actual posting text
+ * mention any of the candidate's skills? If so, that's worth calling out specifically
+ * instead of only ever listing skills generically. */
+function findSkillMentionedInDescription(
+  jobDescription: string | null | undefined,
+  skills: string[]
+): string | null {
+  if (!jobDescription) return null;
+  const lower = jobDescription.toLowerCase();
+  return skills.find((skill) => skill.length > 1 && lower.includes(skill.toLowerCase())) ?? null;
 }
 
 function signatureBlock(
@@ -96,6 +129,7 @@ function fallbackEmail(params: GenerateEmailParams): GeneratedEmail {
     jobTitle,
     company,
     jobUrl,
+    jobDescription,
     contactName,
     candidateName,
     phone,
@@ -129,6 +163,11 @@ function fallbackEmail(params: GenerateEmailParams): GeneratedEmail {
       ? ` I specialize in ${domainPhrase} and build scalable, reliable systems.`
       : ` I build scalable, reliable systems.`;
 
+  const matchedSkill = findSkillMentionedInDescription(jobDescription, skills);
+  const relevanceLine = matchedSkill
+    ? `<p>I noticed the role specifically calls for ${escapeHtml(matchedSkill)}, which is a core part of my background.</p>\n`
+    : "";
+
   const closingAsk =
     type === "APPLICATION"
       ? "I'd love a quick chat to discuss how I can help."
@@ -141,7 +180,7 @@ function fallbackEmail(params: GenerateEmailParams): GeneratedEmail {
         : `Quick question about the ${jobTitle} role${company ? ` at ${company}` : ""}`,
     body: `<p>Hi${contactName ? ` ${escapeHtml(contactName)}` : ""},</p>
 <p>I saw your ${titlePart}${companyPart} and wanted to reach out directly.${experienceClause}</p>
-<p>A brief snapshot of what I'd bring to the table:</p>
+${relevanceLine}<p>A brief snapshot of what I'd bring to the table:</p>
 <p><strong>Core stack:</strong> ${skillsPart}<br>Focus on performance and reliability.</p>
 <p>You can view <a href="${resumeLink}">my resume here</a>.</p>
 <p>${closingAsk}</p>
@@ -163,6 +202,7 @@ export async function generateOutreachEmail(
       company: params.company,
       location: params.location,
       jobUrl: params.jobUrl ?? null,
+      jobDescription: params.jobDescription ?? null,
       contactName: params.contactName ?? null,
       candidateName: params.candidateName,
       phone: params.phone ?? null,
