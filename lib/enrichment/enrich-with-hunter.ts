@@ -34,6 +34,7 @@ export async function enrichListingsWithHunter(jobSearchId: string, userId: stri
       where: { id: listing.id },
       data: {
         contactEmail: contact.contactEmail,
+        contactName: contact.contactName,
         emailType: contact.emailType,
         emailSource: "HUNTER",
         aiConfidence: contact.confidence,

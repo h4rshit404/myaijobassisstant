@@ -18,6 +18,8 @@ interface InitialProfile {
   resumeFileName: string | null;
   resumeDriveLink: string | null;
   phone: string;
+  linkedinUrl: string;
+  githubUrl: string;
   headline: string;
   summary: string;
   experienceYears: number;
@@ -33,6 +35,8 @@ export function OnboardingForm({ initialProfile }: { initialProfile: InitialProf
   const [resumeFileName, setResumeFileName] = useState(initialProfile?.resumeFileName ?? null);
   const [resumeDriveLink, setResumeDriveLink] = useState(initialProfile?.resumeDriveLink ?? "");
   const [phone, setPhone] = useState(initialProfile?.phone ?? "");
+  const [linkedinUrl, setLinkedinUrl] = useState(initialProfile?.linkedinUrl ?? "");
+  const [githubUrl, setGithubUrl] = useState(initialProfile?.githubUrl ?? "");
   const [headline, setHeadline] = useState(initialProfile?.headline ?? "");
   const [summary, setSummary] = useState(initialProfile?.summary ?? "");
   const [experienceYears, setExperienceYears] = useState(initialProfile?.experienceYears ?? 0);
@@ -106,6 +110,8 @@ export function OnboardingForm({ initialProfile }: { initialProfile: InitialProf
           resumeFileName,
           resumeDriveLink,
           phone,
+          linkedinUrl,
+          githubUrl,
           headline,
           summary,
           experienceYears,
@@ -217,6 +223,33 @@ export function OnboardingForm({ initialProfile }: { initialProfile: InitialProf
               Included in the signature of outreach emails sent on your behalf.
             </p>
           </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="linkedin-url">LinkedIn URL</Label>
+              <Input
+                id="linkedin-url"
+                type="url"
+                placeholder="https://linkedin.com/in/..."
+                value={linkedinUrl}
+                onChange={(e) => setLinkedinUrl(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="github-url">GitHub URL</Label>
+              <Input
+                id="github-url"
+                type="url"
+                placeholder="https://github.com/..."
+                value={githubUrl}
+                onChange={(e) => setGithubUrl(e.target.value)}
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Both are optional and, when set, included as links in the signature of outreach
+            emails sent on your behalf.
+          </p>
 
           <div className="space-y-2">
             <Label htmlFor="summary">Summary</Label>

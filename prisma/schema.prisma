@@ -42,7 +42,9 @@ model Profile {
   resumeFileName String?
   resumeDriveLink String?
 
-  phone String?
+  phone       String?
+  linkedinUrl String?
+  githubUrl   String?
 
   headline        String?
   summary         String?
@@ -169,6 +171,7 @@ model JobListing {
   descriptionRaw  String?  @db.Text
 
   contactEmail  String?
+  contactName   String? // best-effort — set when Hunter.io resolves a named person, for "Hi <name>,"
   emailType     EmailType    @default(UNKNOWN)
   emailSource   EmailSource?
   aiConfidence  Float?

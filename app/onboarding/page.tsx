@@ -24,6 +24,8 @@ export default async function OnboardingPage() {
                   resumeFileName: profile.resumeFileName,
                   resumeDriveLink: profile.resumeDriveLink,
                   phone: profile.phone ?? "",
+                  linkedinUrl: profile.linkedinUrl ?? "",
+                  githubUrl: profile.githubUrl ?? "",
                   headline: profile.headline ?? "",
                   summary: profile.summary ?? "",
                   experienceYears: profile.experienceYears ?? 0,

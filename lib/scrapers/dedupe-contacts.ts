@@ -44,7 +44,13 @@ export async function dedupeContactsAcrossSearches(jobSearchId: string, userId: 
 
     await prisma.jobListing.updateMany({
       where: { id: { in: toClear.map((l) => l.id) } },
-      data: { contactEmail: null, emailType: "UNKNOWN", emailSource: null, aiConfidence: null },
+      data: {
+        contactEmail: null,
+        contactName: null,
+        emailType: "UNKNOWN",
+        emailSource: null,
+        aiConfidence: null,
+      },
     });
   }
 }

@@ -4,6 +4,8 @@ interface HunterEmail {
   confidence?: number;
   position?: string | null;
   department?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
 }
 
 interface HunterDomainSearchResponse {
@@ -13,8 +15,14 @@ interface HunterDomainSearchResponse {
 
 export interface HunterContact {
   contactEmail: string;
+  contactName: string | null;
   emailType: "HR" | "REFERRAL";
   confidence: number;
+}
+
+function fullName(email: HunterEmail): string | null {
+  const name = [email.first_name, email.last_name].filter(Boolean).join(" ").trim();
+  return name || null;
 }
 
 const HR_LOCAL_PART_HINTS = ["hr", "career", "recruit", "talent", "jobs", "hiring", "people"];
@@ -39,6 +47,7 @@ function pickBestContact(emails: HunterEmail[]): HunterContact | null {
   if (genericHr) {
     return {
       contactEmail: genericHr.value,
+      contactName: fullName(genericHr),
       emailType: "HR",
       confidence: (genericHr.confidence ?? 70) / 100,
     };
@@ -49,6 +58,7 @@ function pickBestContact(emails: HunterEmail[]): HunterContact | null {
   if (personalHr) {
     return {
       contactEmail: personalHr.value,
+      contactName: fullName(personalHr),
       emailType: "HR",
       confidence: (personalHr.confidence ?? 60) / 100,
     };
@@ -59,6 +69,7 @@ function pickBestContact(emails: HunterEmail[]): HunterContact | null {
   if (anyGeneric) {
     return {
       contactEmail: anyGeneric.value,
+      contactName: fullName(anyGeneric),
       emailType: "HR",
       confidence: (anyGeneric.confidence ?? 50) / 100,
     };
@@ -71,6 +82,7 @@ function pickBestContact(emails: HunterEmail[]): HunterContact | null {
   if (bestPersonal) {
     return {
       contactEmail: bestPersonal.value,
+      contactName: fullName(bestPersonal),
       emailType: "REFERRAL",
       confidence: (bestPersonal.confidence ?? 40) / 100,
     };
