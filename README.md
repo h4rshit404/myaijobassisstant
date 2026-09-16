@@ -60,6 +60,7 @@ profile) → add an OpenAI key in Settings → run a search.
 | Adzuna | Official free self-serve API ([developer.adzuna.com](https://developer.adzuna.com)) | Yes (free) |
 | JSearch (RapidAPI) | Free-tier API aggregating Indeed, LinkedIn, Glassdoor & more — the real source is reported per listing | Yes (free tier) |
 | Google Jobs | Via SerpAPI ([serpapi.com](https://serpapi.com)) | Yes (free trial / paid) |
+| Jooble | Official free self-serve API ([jooble.org/api/about](https://jooble.org/api/about)) | Yes (free) |
 | LinkedIn | Best-effort scrape of LinkedIn's public, unauthenticated job-search results | No |
 | Naukri, Indeed, Glassdoor, Hirist | Best-effort scrape of each site's public search page | No |
 
@@ -83,8 +84,14 @@ posting on the company's own careers page or ATS) and pulls the full page text b
 classifier looks for an email. This is what makes company/HR emails findable even when the
 platform's search-result card didn't show one. Listings that still come up with no email after
 that (most of them, realistically — plenty of companies use apply-tracking systems with no
-email at all) are left out of the results and the table entirely; only listings with a
-classified contact email are shown.
+email at all) fall through to a second, independent lookup: **Hunter.io**
+(`lib/enrichment/hunter.ts`) looks up real HR/careers inboxes and named employees' work
+emails directly for the listing's company name, no posting text required. It works even
+without an OpenAI key configured. This is the highest-leverage key to add if searches are
+coming back with few or no results — configure it in Settings (free tier at
+[hunter.io](https://hunter.io)). Listings still without an email after both steps are left
+out of the results and the table entirely; only listings with a classified contact email are
+shown.
 
 ## Applied jobs
 

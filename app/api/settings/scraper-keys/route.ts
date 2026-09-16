@@ -9,6 +9,8 @@ const BodySchema = z.object({
   adzunaAppKey: z.string().optional(),
   rapidApiKey: z.string().optional(),
   serpApiKey: z.string().optional(),
+  joobleApiKey: z.string().optional(),
+  hunterApiKey: z.string().optional(),
 });
 
 function fieldUpdate(prefix: string, value: string | undefined) {
@@ -34,13 +36,15 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
-  const { adzunaAppId, adzunaAppKey, rapidApiKey, serpApiKey } = parsed.data;
+  const { adzunaAppId, adzunaAppKey, rapidApiKey, serpApiKey, joobleApiKey, hunterApiKey } = parsed.data;
 
   const updates = {
     ...fieldUpdate("adzunaAppId", adzunaAppId),
     ...fieldUpdate("adzunaAppKey", adzunaAppKey),
     ...fieldUpdate("rapidApiKey", rapidApiKey),
     ...fieldUpdate("serpApiKey", serpApiKey),
+    ...fieldUpdate("joobleApiKey", joobleApiKey),
+    ...fieldUpdate("hunterApiKey", hunterApiKey),
   };
 
   await prisma.apiKeySet.upsert({

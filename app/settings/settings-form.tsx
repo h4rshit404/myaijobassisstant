@@ -22,6 +22,8 @@ interface ScraperKeyStatus {
   adzunaAppKey: boolean;
   rapidApiKey: boolean;
   serpApiKey: boolean;
+  joobleApiKey: boolean;
+  hunterApiKey: boolean;
 }
 interface GmailStatus {
   email: string;
@@ -47,7 +49,11 @@ export function SettingsForm({
   const [adzunaAppKey, setAdzunaAppKey] = useState("");
   const [rapidApiKey, setRapidApiKey] = useState("");
   const [serpApiKey, setSerpApiKey] = useState("");
+  const [joobleApiKey, setJoobleApiKey] = useState("");
   const [savingScraperKeys, setSavingScraperKeys] = useState(false);
+
+  const [hunterApiKey, setHunterApiKey] = useState("");
+  const [savingHunterKey, setSavingHunterKey] = useState(false);
 
   const gmailHasSendScope = gmail?.scopes.some((s) => s.endsWith("/gmail.send")) ?? false;
 
@@ -90,6 +96,7 @@ export function SettingsForm({
           ...(adzunaAppKey ? { adzunaAppKey } : {}),
           ...(rapidApiKey ? { rapidApiKey } : {}),
           ...(serpApiKey ? { serpApiKey } : {}),
+          ...(joobleApiKey ? { joobleApiKey } : {}),
         }),
       });
       if (!res.ok) {
@@ -100,11 +107,37 @@ export function SettingsForm({
       setAdzunaAppKey("");
       setRapidApiKey("");
       setSerpApiKey("");
+      setJoobleApiKey("");
       toast.success("Job-source keys saved");
     } catch {
       toast.error("Failed to save keys");
     } finally {
       setSavingScraperKeys(false);
+    }
+  }
+
+  async function handleSaveHunterKey() {
+    if (!hunterApiKey.trim()) {
+      toast.error("Enter a Hunter.io API key first");
+      return;
+    }
+    setSavingHunterKey(true);
+    try {
+      const res = await fetch("/api/settings/scraper-keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hunterApiKey: hunterApiKey.trim() }),
+      });
+      if (!res.ok) {
+        toast.error("Failed to save key");
+        return;
+      }
+      setHunterApiKey("");
+      toast.success("Hunter.io key saved");
+    } catch {
+      toast.error("Failed to save key");
+    } finally {
+      setSavingHunterKey(false);
     }
   }
 
@@ -239,9 +272,55 @@ export function SettingsForm({
               onChange={(e) => setSerpApiKey(e.target.value)}
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="jooble-key">Jooble API key</Label>
+            <Input
+              id="jooble-key"
+              type="password"
+              placeholder={scraperKeys.joobleApiKey ? "•••••••• (saved)" : "jooble key"}
+              value={joobleApiKey}
+              onChange={(e) => setJoobleApiKey(e.target.value)}
+            />
+          </div>
           <Button variant="outline" onClick={handleSaveScraperKeys} disabled={savingScraperKeys}>
             {savingScraperKeys && <Loader2 className="h-4 w-4 animate-spin" />}
             Save job-source keys
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            Email finder (Hunter.io)
+            {scraperKeys.hunterApiKey && (
+              <Badge variant="secondary" className="gap-1">
+                <CheckCircle2 className="h-3 w-3" /> Connected
+              </Badge>
+            )}
+          </CardTitle>
+          <CardDescription>
+            Most job postings don&apos;t print a contact email at all. Hunter.io looks up real
+            HR/careers inboxes and named employees&apos; work emails directly for a listing&apos;s
+            company — this is what finds an email when a posting&apos;s own text has none. Free
+            tier available at hunter.io.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="hunter-key">API key</Label>
+            <Input
+              id="hunter-key"
+              type="password"
+              placeholder={scraperKeys.hunterApiKey ? "•••••••• (saved — enter a new key to replace)" : "hunter.io key"}
+              value={hunterApiKey}
+              onChange={(e) => setHunterApiKey(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
+          <Button onClick={handleSaveHunterKey} disabled={savingHunterKey}>
+            {savingHunterKey && <Loader2 className="h-4 w-4 animate-spin" />}
+            Save Hunter.io key
           </Button>
         </CardContent>
       </Card>

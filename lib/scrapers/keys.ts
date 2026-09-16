@@ -27,5 +27,13 @@ export async function getScraperKeysForUser(userId: string): Promise<DecryptedSc
       decryptSecretOrNull(keySet?.serpApiKeyEncrypted, keySet?.serpApiKeyIv, keySet?.serpApiKeyAuthTag) ??
       process.env.SERPAPI_KEY ??
       undefined,
+    joobleApiKey:
+      decryptSecretOrNull(keySet?.joobleApiKeyEncrypted, keySet?.joobleApiKeyIv, keySet?.joobleApiKeyAuthTag) ??
+      process.env.JOOBLE_API_KEY ??
+      undefined,
+    hunterApiKey:
+      decryptSecretOrNull(keySet?.hunterApiKeyEncrypted, keySet?.hunterApiKeyIv, keySet?.hunterApiKeyAuthTag) ??
+      process.env.HUNTER_API_KEY ??
+      undefined,
   };
 }

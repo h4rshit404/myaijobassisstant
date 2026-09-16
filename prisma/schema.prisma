@@ -87,6 +87,15 @@ model ApiKeySet {
   serpApiKeyIv         String?
   serpApiKeyAuthTag    String?
 
+  joobleApiKeyEncrypted String?
+  joobleApiKeyIv         String?
+  joobleApiKeyAuthTag    String?
+
+  // Hunter.io — finds HR/careers and named employees' work emails for a company
+  hunterApiKeyEncrypted String?
+  hunterApiKeyIv         String?
+  hunterApiKeyAuthTag    String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

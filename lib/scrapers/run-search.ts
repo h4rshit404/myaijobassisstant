@@ -2,10 +2,13 @@ import { prisma } from "@/lib/prisma";
 import { runScrapePipeline } from "@/lib/scrapers/pipeline";
 import { enrichListingsWithFullText } from "@/lib/scrapers/enrich";
 import { classifyJobListings } from "@/lib/ai/classify-listings";
+import { enrichListingsWithHunter } from "@/lib/enrichment/enrich-with-hunter";
 
 /** Orchestrates a full search run: scrape (all platforms in parallel, isolated failures) ->
- * classify (AI, best-effort) -> DONE. Only reaches FAILED if something outside the
- * per-adapter/per-listing error handling throws (e.g. the database itself is unreachable).
+ * enrich (fetch full posting text) -> classify (AI, best-effort) -> enrich via Hunter.io
+ * (company-level HR/employee email lookup, for whatever's still unresolved) -> DONE. Only
+ * reaches FAILED if something outside the per-adapter/per-listing error handling throws
+ * (e.g. the database itself is unreachable).
  *
  * Runs detached from the request that kicked it off (see /api/search), relying on the
  * Node.js process staying alive between requests — true for `next dev`/`next start`, but
@@ -36,6 +39,10 @@ export async function runJobSearch(params: {
     await prisma.jobSearch.update({ where: { id: jobSearchId }, data: { status: "CLASSIFYING" } });
 
     await classifyJobListings(jobSearchId, userId);
+
+    // Text classification only finds an email if the posting mentioned one. For everything
+    // still unresolved, look up the company directly via Hunter.io — independent of OpenAI.
+    await enrichListingsWithHunter(jobSearchId, userId);
 
     await prisma.jobSearch.update({ where: { id: jobSearchId }, data: { status: "DONE" } });
   } catch (err) {

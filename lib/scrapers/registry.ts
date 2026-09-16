@@ -2,6 +2,7 @@ import type { JobSourceAdapter } from "@/lib/scrapers/types";
 import { adzunaAdapter } from "@/lib/scrapers/adapters/adzuna";
 import { jsearchAdapter } from "@/lib/scrapers/adapters/jsearch";
 import { serpApiGoogleJobsAdapter } from "@/lib/scrapers/adapters/serpapi-google-jobs";
+import { joobleAdapter } from "@/lib/scrapers/adapters/jooble";
 import { linkedinAdapter } from "@/lib/scrapers/adapters/linkedin";
 import { naukriAdapter } from "@/lib/scrapers/adapters/naukri";
 import { indeedAdapter } from "@/lib/scrapers/adapters/indeed";
@@ -12,6 +13,7 @@ export const ALL_ADAPTERS: JobSourceAdapter[] = [
   adzunaAdapter,
   jsearchAdapter,
   serpApiGoogleJobsAdapter,
+  joobleAdapter,
   linkedinAdapter,
   naukriAdapter,
   indeedAdapter,

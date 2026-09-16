@@ -28,6 +28,8 @@ export default async function SettingsPage() {
             adzunaAppKey: !!keySet?.adzunaAppKeyEncrypted,
             rapidApiKey: !!keySet?.rapidApiKeyEncrypted,
             serpApiKey: !!keySet?.serpApiKeyEncrypted,
+            joobleApiKey: !!keySet?.joobleApiKeyEncrypted,
+            hunterApiKey: !!keySet?.hunterApiKeyEncrypted,
           }}
           gmail={
             gmailAccount

@@ -12,6 +12,8 @@ export interface DecryptedScraperKeys {
   adzunaAppKey?: string;
   rapidApiKey?: string;
   serpApiKey?: string;
+  joobleApiKey?: string;
+  hunterApiKey?: string;
 }
 
 export interface ScraperParams {
