@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, Code2, Eye, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, Code2, Eye, Loader2, Sparkles, XCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,7 @@ export interface EmailDraft {
   jobTitle: string;
   company: string | null;
   contactEmail: string;
+  emailSource?: "SCRAPED" | "HUNTER" | "AI_GUESSED" | null;
   type: "APPLICATION" | "REFERRAL";
   subject: string;
   body: string;
@@ -162,6 +163,12 @@ export function EmailPreviewModal({
                           {draft.type === "APPLICATION" ? "Job Application" : "Referral Request"}
                         </Badge>
                       </p>
+                      {draft.emailSource === "AI_GUESSED" && (
+                        <p className="mt-1 flex items-center gap-1 text-xs text-amber-600">
+                          <Sparkles className="h-3 w-3" /> This email is an AI guess based on the
+                          company name, not scraped or verified — double-check before sending.
+                        </p>
+                      )}
                     </div>
                     {result && (
                       <Badge variant={result.status === "SENT" ? "default" : "destructive"} className="gap-1">

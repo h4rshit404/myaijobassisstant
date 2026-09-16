@@ -1,4 +1,4 @@
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Sparkles } from "lucide-react";
 import { requireOnboardedUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
@@ -64,7 +64,20 @@ export default async function AppliedJobsPage() {
                   <TableCell>{email.jobListing.company ?? "—"}</TableCell>
                   <TableCell>{email.jobListing.location ?? "—"}</TableCell>
                   <TableCell>{email.jobListing.sourcePlatform}</TableCell>
-                  <TableCell className="text-sm">{email.jobListing.contactEmail ?? "—"}</TableCell>
+                  <TableCell className="text-sm">
+                    <div className="flex items-center gap-1.5">
+                      {email.jobListing.contactEmail ?? "—"}
+                      {email.jobListing.emailSource === "AI_GUESSED" && (
+                        <Badge
+                          variant="outline"
+                          className="gap-1 text-amber-600 border-amber-300"
+                          title="This was an AI-inferred guess, not a scraped or verified email."
+                        >
+                          <Sparkles className="h-3 w-3" /> Guessed
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={email.type === "APPLICATION" ? "default" : "secondary"}>
                       {email.type === "APPLICATION" ? "Job Application" : "Referral"}

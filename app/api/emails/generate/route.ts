@@ -78,6 +78,7 @@ export async function POST(req: Request) {
       jobTitle: listing.title,
       company: listing.company,
       contactEmail: listing.contactEmail,
+      emailSource: listing.emailSource,
       type,
       subject: outboundEmail.subject,
       body: outboundEmail.body,

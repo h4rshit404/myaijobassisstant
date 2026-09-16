@@ -31,6 +31,7 @@ export async function classifyJobListings(jobSearchId: string, userId: string): 
       data: {
         contactEmail: result.contactEmail,
         emailType: result.emailType,
+        emailSource: result.contactEmail ? "SCRAPED" : undefined,
         aiConfidence: result.confidence,
         aiError: null,
       },

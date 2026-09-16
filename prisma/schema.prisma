@@ -150,6 +150,12 @@ enum EmailType {
   UNKNOWN
 }
 
+enum EmailSource {
+  SCRAPED // found in the posting's own text (title/description/JSON-LD)
+  HUNTER // looked up via Hunter.io's company directory
+  AI_GUESSED // inferred by the AI from the company name/domain pattern — unverified
+}
+
 model JobListing {
   id          String    @id @default(cuid())
   jobSearchId String
@@ -163,7 +169,8 @@ model JobListing {
   descriptionRaw  String?  @db.Text
 
   contactEmail  String?
-  emailType     EmailType @default(UNKNOWN)
+  emailType     EmailType    @default(UNKNOWN)
+  emailSource   EmailSource?
   aiConfidence  Float?
   aiError       String?
 

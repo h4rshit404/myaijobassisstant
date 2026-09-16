@@ -89,15 +89,49 @@ email at all) fall through to a second, independent lookup: **Hunter.io**
 emails directly for the listing's company name, no posting text required. It works even
 without an OpenAI key configured. This is the highest-leverage key to add if searches are
 coming back with few or no results — configure it in Settings (free tier at
-[hunter.io](https://hunter.io)). Listings still without an email after both steps are left
-out of the results and the table entirely; only listings with a classified contact email are
-shown.
+[hunter.io](https://hunter.io)).
 
-## Applied jobs
+For whatever's still unresolved after both of those, a third and final fallback kicks in:
+**AI-guessed email** (`lib/ai/guess-listing-emails.ts`) asks the OpenAI model itself to infer
+a standard-pattern HR email (`careers@`, `hr@`, ...) purely from the company name and, when
+available, a verified domain hint taken from the listing's own link (skipped if that link is
+a job board/ATS rather than the company's real site — see
+`lib/enrichment/known-non-company-domains.ts`). The model is instructed to decline rather than
+fabricate when it doesn't clearly recognize the company. This is **unverified** — it's marked
+with a distinct `emailSource: AI_GUESSED`, shown with an amber "Guessed" badge in the results
+table and a warning in the email preview modal, and its confidence is capped low. Only needs
+an OpenAI key (already required for classification).
 
-Once an outreach email is actually sent for a listing, it's recorded as "applied" and:
-- shows up in the **Applied** tab (`/dashboard/applied`) instead of the search results table, and
-- is excluded from any future search (matched by title+company+location) so it can't resurface.
+Listings still without any email after all three steps are left out of the results and the
+table entirely; only listings with a contact email are shown.
+
+## No duplicates, anywhere
+
+Two dedupe layers, both scoped to the whole user — not just one search — so nothing shows up
+twice across the results table, the Searched queue, and the Applied tab combined:
+
+1. **Same posting, insert time** (`getExistingDedupeHashes` in `lib/scrapers/applied.ts`) —
+   before a scraped job is even persisted, its title+company+location is checked against
+   every listing the user already has, from any past search, applied or not. A repeat never
+   becomes a second row.
+2. **Same real contact, after email resolution** (`lib/scrapers/dedupe-contacts.ts`) — a final
+   pipeline step collapses every (company, email) pair that now appears on more than one of
+   the user's listings — this search's own and every past one — down to a single row. This is
+   what catches Hunter/AI-guess resolving the same generic inbox for several
+   differently-worded postings from the same company (different title, found via a different
+   platform), which title+company+location matching alone would miss. The row that's kept is
+   whichever one is already applied (if any), so a later duplicate can never "undo" an
+   application that already went out; every other row in the group just loses its email and
+   drops out of the results like it never found one.
+
+Once an outreach email is actually sent for a listing, it shows up in the **Applied** tab
+(`/dashboard/applied`) instead of anywhere else.
+
+**Searched** (`/dashboard/searched`) is a paginated (25/page), cross-search queue: every job
+with a contact email from *any* of your past searches that you haven't applied to yet, in one
+place — no need to revisit each search individually. It uses the same Apply
+(Selected)/Apply to All table as a single search's results page
+(`components/job-listings-board.tsx`), so you can act on it directly from there.
 
 ## Security notes
 
