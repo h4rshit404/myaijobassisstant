@@ -49,6 +49,10 @@ for anything beyond local dev) and fill in:
   key is missing/invalid or the OpenAI call fails, before giving up and using the static
   template. This model is free on OpenRouter's tier but rate-limited and can be
   rotated/retired by OpenRouter without notice — xAI's own direct API has no free tier.
+- `GROQ_API_KEY` — optional. When set, outreach email generation tries a free Llama model
+  (`llama-3.3-70b-versatile`) directly on [Groq](https://console.groq.com/keys) as a third
+  attempt, after OpenRouter and before the static template. Free on Groq's tier but
+  rate-limited and can be rotated/retired by Groq without notice.
 
 ### 4. Run
 

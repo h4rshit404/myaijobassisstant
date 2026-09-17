@@ -2,6 +2,7 @@ import { z } from "zod";
 import type OpenAI from "openai";
 import type { UserOpenAI } from "@/lib/openai/client";
 import { getOpenRouterClient } from "@/lib/openrouter/client";
+import { getGroqClient } from "@/lib/groq/client";
 
 export const GeneratedEmailSchema = z.object({
   subject: z.string().min(1).max(200),
@@ -253,7 +254,8 @@ async function tryProvider(
  * every provider call/parsing fails — email drafting should never be a hard blocker.
  *
  * Provider order: the user's own OpenAI key first, then (if OPENROUTER_API_KEY is set) a
- * free Grok model on OpenRouter as a second attempt, then the static template. */
+ * free Grok model on OpenRouter, then (if GROQ_API_KEY is set) a free Llama model directly
+ * on Groq, then the static template. */
 export async function generateOutreachEmail(
   openai: UserOpenAI | null,
   params: GenerateEmailParams
@@ -266,6 +268,12 @@ export async function generateOutreachEmail(
   const openRouter = getOpenRouterClient();
   if (openRouter) {
     const result = await tryProvider("grok", openRouter.client, openRouter.model, params);
+    if (result) return result;
+  }
+
+  const groq = getGroqClient();
+  if (groq) {
+    const result = await tryProvider("groq", groq.client, groq.model, params);
     if (result) return result;
   }
 
