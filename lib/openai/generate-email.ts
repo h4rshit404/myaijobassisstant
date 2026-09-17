@@ -1,5 +1,7 @@
 import { z } from "zod";
+import type OpenAI from "openai";
 import type { UserOpenAI } from "@/lib/openai/client";
+import { getOpenRouterClient } from "@/lib/openrouter/client";
 
 export const GeneratedEmailSchema = z.object({
   subject: z.string().min(1).max(200),
@@ -188,14 +190,16 @@ ${signature}`,
   };
 }
 
-/** Falls back to a static template (never returns null) if no OpenAI client is configured
- * or the model call/parsing fails — email drafting should never be a hard blocker. */
-export async function generateOutreachEmail(
-  openai: UserOpenAI | null,
+/** Tries one provider; returns null (never throws) if the call, parsing, or schema
+ * validation fails, so the caller can move on to the next provider/fallback. Always logs
+ * why, since a silent null here previously made every provider failure indistinguishable
+ * from "not configured." */
+async function tryProvider(
+  label: string,
+  client: OpenAI,
+  model: string,
   params: GenerateEmailParams
-): Promise<GeneratedEmail> {
-  if (!openai) return fallbackEmail(params);
-
+): Promise<GeneratedEmail | null> {
   try {
     const userContent = JSON.stringify({
       jobTitle: params.jobTitle,
@@ -217,8 +221,8 @@ export async function generateOutreachEmail(
       notes: params.notes,
     });
 
-    const completion = await openai.client.chat.completions.create({
-      model: openai.model,
+    const completion = await client.chat.completions.create({
+      model,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt(params.type) },
@@ -228,11 +232,42 @@ export async function generateOutreachEmail(
     });
 
     const raw = completion.choices[0]?.message?.content;
-    if (!raw) return fallbackEmail(params);
+    if (!raw) {
+      console.error(`[generate-email:${label}] empty response from model "${model}"`);
+      return null;
+    }
 
     const parsed = GeneratedEmailSchema.safeParse(JSON.parse(raw));
-    return parsed.success ? parsed.data : fallbackEmail(params);
-  } catch {
-    return fallbackEmail(params);
+    if (!parsed.success) {
+      console.error(`[generate-email:${label}] response failed schema validation:`, parsed.error.message);
+      return null;
+    }
+    return parsed.data;
+  } catch (error) {
+    console.error(`[generate-email:${label}] request failed:`, error);
+    return null;
   }
+}
+
+/** Falls back to a static template (never returns null) if no AI provider is configured or
+ * every provider call/parsing fails — email drafting should never be a hard blocker.
+ *
+ * Provider order: the user's own OpenAI key first, then (if OPENROUTER_API_KEY is set) a
+ * free Grok model on OpenRouter as a second attempt, then the static template. */
+export async function generateOutreachEmail(
+  openai: UserOpenAI | null,
+  params: GenerateEmailParams
+): Promise<GeneratedEmail> {
+  if (openai) {
+    const result = await tryProvider("openai", openai.client, openai.model, params);
+    if (result) return result;
+  }
+
+  const openRouter = getOpenRouterClient();
+  if (openRouter) {
+    const result = await tryProvider("grok", openRouter.client, openRouter.model, params);
+    if (result) return result;
+  }
+
+  return fallbackEmail(params);
 }

@@ -28,7 +28,8 @@ export async function validateOpenAIKey(apiKey: string): Promise<boolean> {
     const client = new OpenAI({ apiKey });
     await client.models.list();
     return true;
-  } catch {
+  } catch (error) {
+    console.error("[openai] key validation failed:", error);
     return false;
   }
 }

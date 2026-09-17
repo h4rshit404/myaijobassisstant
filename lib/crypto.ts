@@ -54,7 +54,8 @@ export function decryptSecretOrNull(
   if (!ciphertext || !iv || !authTag) return null;
   try {
     return decryptSecret({ ciphertext, iv, authTag });
-  } catch {
+  } catch (error) {
+    console.error("[crypto] failed to decrypt stored secret:", error);
     return null;
   }
 }

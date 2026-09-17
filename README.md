@@ -43,6 +43,12 @@ for anything beyond local dev) and fill in:
   beyond your own machine.
 - `ADZUNA_APP_ID` / `ADZUNA_APP_KEY`, `RAPIDAPI_KEY`, `SERPAPI_KEY` — optional app-level
   fallback keys for the job-source APIs (see below). Users can also set their own in Settings.
+- `OPENROUTER_API_KEY` — optional. When set, outreach email generation
+  (`lib/openai/generate-email.ts`) tries a free Grok model (`x-ai/grok-4-fast:free`) via
+  [OpenRouter](https://openrouter.ai/keys) as a second attempt whenever a user's own OpenAI
+  key is missing/invalid or the OpenAI call fails, before giving up and using the static
+  template. This model is free on OpenRouter's tier but rate-limited and can be
+  rotated/retired by OpenRouter without notice — xAI's own direct API has no free tier.
 
 ### 4. Run
 
